@@ -74,11 +74,11 @@ body {
     position: fixed;
     top: 0;
     width: 100%;
+    height: 58px;
     display: flex;
-    flex-wrap: wrap; /* 折り返し対応 */
     align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 0 16px;
     background: var(--panel);
     backdrop-filter: blur(24px);
     border-bottom: 1px solid var(--panel-border);
@@ -86,38 +86,33 @@ body {
 }
 
 .icon-btn {
-    padding: 4px 6px;
+    padding: 4px 10px;
     border-radius: 8px;
     background: var(--btn-bg);
     border: 1px solid var(--btn-border);
     cursor: pointer;
     transition: 0.2s;
-    font-size: 12px;
-    flex: 1 1 auto;
-    min-width: 40px;
-    text-align: center;
+    font-size: 14px;
 }
 .icon-btn:hover {
     background: rgba(255,255,255,0.9);
 }
 
 .color-picker {
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
     border-radius: 8px;
     border: 1px solid var(--btn-border);
     cursor: pointer;
-    flex: 0 0 auto;
 }
 
 /* スライダー */
 .slider {
     -webkit-appearance: none;
-    width: 80px;
+    width: 120px;
     height: 4px;
     border-radius: 2px;
     background: #c7c7cc;
-    flex: 1 1 auto;
 }
 .dark .slider {
     background: #505050;
@@ -133,10 +128,9 @@ body {
 
 /* ペン太さプレビュー */
 #previewSize {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    flex: 0 0 auto;
 }
 
 /* ======================================
@@ -146,17 +140,12 @@ body {
     margin-top: 90px;
     display: flex;
     justify-content: center;
-    padding: 0 5px;
 }
 
 canvas {
     background: var(--canvas-bg);
     border-radius: 12px;
     box-shadow: 0 8px 28px rgba(0,0,0,0.08);
-    width: 95vw;
-    max-width: 900px;
-    height: auto;
-    max-height: 600px;
 }
 </style>
 </head>
@@ -240,55 +229,31 @@ updatePreview();
 /* ======================================
       描画処理
    ====================================== */
-function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    if (e.touches) {
-        return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-    } else {
-        return { x: e.offsetX, y: e.offsetY };
-    }
-}
-
-function startDraw(e) {
-    e.preventDefault();
-    const pos = getPos(e);
+canvas.addEventListener("mousedown", (e) => {
     drawing = true;
     ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    ctx.moveTo(e.offsetX, e.offsetY);
+
     if (isFillMode) {
-        floodFill(pos.x, pos.y, hexToRgb(colorPicker.value));
+        floodFill(e.offsetX, e.offsetY, hexToRgb(colorPicker.value));
         saveState();
         drawing = false;
     }
-}
-
-function drawMove(e) {
-    e.preventDefault();
+});
+canvas.addEventListener("mouseup", () => {
+    if (drawing && !isFillMode) saveState();
+    drawing = false;
+});
+canvas.addEventListener("mousemove", (e) => {
     if (!drawing || isFillMode) return;
-    const pos = getPos(e);
     ctx.lineWidth = lineWidthSlider.value;
     ctx.lineCap = "round";
     ctx.strokeStyle = isEraser ? "#ffffff" : colorPicker.value;
-    ctx.lineTo(pos.x, pos.y);
+    ctx.lineTo(e.offsetX, e.offsetY);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-}
-
-function endDraw(e) {
-    e.preventDefault();
-    if (drawing && !isFillMode) saveState();
-    drawing = false;
-}
-
-canvas.addEventListener("mousedown", startDraw);
-canvas.addEventListener("mousemove", drawMove);
-canvas.addEventListener("mouseup", endDraw);
-canvas.addEventListener("mouseleave", endDraw);
-
-canvas.addEventListener("touchstart", startDraw, { passive: false });
-canvas.addEventListener("touchmove", drawMove, { passive: false });
-canvas.addEventListener("touchend", endDraw);
+    ctx.moveTo(e.offsetX, e.offsetY);
+});
 
 /* ======================================
       履歴管理
